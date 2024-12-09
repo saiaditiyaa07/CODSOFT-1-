@@ -1,0 +1,121 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <ctime>
+
+using namespace std;
+
+struct Book {
+    string title;
+    string author;
+    string isbn;
+    bool available;
+};
+
+struct Borrower {
+    string name;
+    vector<Book> borrowedBooks;
+};
+
+double calculateFine(const Book& book, time_t borrowedTime) {
+    time_t currentTime = time(0);
+    double daysOverdue = difftime(currentTime, borrowedTime) / (60 * 60 * 24);
+    return (daysOverdue > 0) ? daysOverdue * 0.5 : 0;
+}
+
+void addBook(vector<Book>& library) {
+    Book newBook;
+    cout << "Enter the book title: ";
+    cin.ignore();
+    getline(cin, newBook.title);
+    cout << "Enter the author's name: ";
+    getline(cin, newBook.author);
+    cout << "Enter the ISBN: ";
+    cin >> newBook.isbn;
+    newBook.available = true;
+    library.push_back(newBook);
+    cout << "Book successfully added: " << newBook.title << " by " << newBook.author << endl;
+}
+
+void searchBook(const vector<Book>& library) {
+    string query;
+    cout << "Enter title, author, or ISBN to search: ";
+    cin.ignore();
+    getline(cin, query);
+    bool found = false;
+    for (const auto& book : library) {
+        if (book.title == query || book.author == query || book.isbn == query) {
+            cout << "Book found: " << book.title << " by " << book.author << " (ISBN: " << book.isbn << ")" << endl;
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        cout << "No matching book found." << endl;
+    }
+}
+
+void borrowBook(vector<Book>& library, Borrower& borrower) {
+    string isbn;
+    cout << "Enter the ISBN of the book to borrow: ";
+    cin >> isbn;
+    for (auto& book : library) {
+        if (book.isbn == isbn && book.available) {
+            borrower.borrowedBooks.push_back(book);
+            book.available = false;
+            cout << "You have successfully borrowed: " << book.title << endl;
+            return;
+        }
+    }
+    cout << "This book is not available for borrowing." << endl;
+}
+
+void returnBook(vector<Book>& library, Borrower& borrower) {
+    string isbn;
+    cout << "Enter the ISBN of the book to return: ";
+    cin >> isbn;
+    for (auto it = borrower.borrowedBooks.begin(); it != borrower.borrowedBooks.end(); ++it) {
+        if (it->isbn == isbn) {
+            double fine = calculateFine(*it, time(0));
+            cout << "You have returned: " << it->title << endl;
+            if (fine > 0) {
+                cout << "You have a fine of: $" << fine << endl;
+            }
+            for (auto& book : library) {
+                if (book.isbn == isbn) {
+                    book.available = true;
+                    break;
+                }
+            }
+            borrower.borrowedBooks.erase(it);
+            return;
+        }
+    }
+    cout << "You have not borrowed this book." << endl;
+}
+
+int main() {
+    vector<Book> library;
+    Borrower borrower{"John Doe"};
+    int choice;
+    do {
+        cout << "\nLibrary Management System\n";
+        cout << "1. Add Book\n";
+        cout << "2. Search Book\n";
+        cout << "3. Borrow Book\n";
+        cout << "4. Return Book\n";
+        cout << "5. Exit\n";
+        cout << "Select an option: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1: addBook(library); break;
+            case 2: searchBook(library); break;
+            case 3: borrowBook(library, borrower); break;
+            case 4: returnBook(library, borrower); break;
+            case 5: cout << "Exiting the system. Thank you!" << endl; break;
+            default: cout << "Invalid choice. Please try again." << endl;
+        }
+    } while (choice != 5);
+    return 0;
+}
